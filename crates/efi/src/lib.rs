@@ -1,6 +1,7 @@
 #![no_std]
 
 use core::ffi::c_void;
+use core::ptr::null_mut;
 
 pub mod proto;
 pub use proto::stop::*;
@@ -40,15 +41,15 @@ impl SystemTable {
     }
 }
 
-static mut SYSTEM_TABLE: Option<*mut SystemTable> = None;
+static mut SYSTEM_TABLE: *mut SystemTable = null_mut();
 
 pub fn init_tables(st: *mut SystemTable) {
     if st.is_null() {
         panic!();
     }
-    unsafe { SYSTEM_TABLE = Some(st); }
+    unsafe { SYSTEM_TABLE = st; }
 }
 
 pub fn system_table() -> &'static mut SystemTable {
-    unsafe { &mut *SYSTEM_TABLE.unwrap() }
+    unsafe { &mut *SYSTEM_TABLE }
 }
