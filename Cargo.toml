@@ -1,0 +1,10 @@
+[package]
+name = "yboot2"
+version = "0.1.0"
+authors = ["Mark <alnyan@airmail.cc>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+spin = { version = "0.5.2" }
