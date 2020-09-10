@@ -10,22 +10,26 @@ use efi::{Status, Handle, SystemTable, system_table};
 mod println;
 
 fn main() -> Status {
-    let con_out = system_table().con_out();
+    let mut desc_array = [0u8; 4096];
+    let mut mmap = efi::MemoryMap::new(&mut desc_array);
 
-    print!("Firmware vendor: ");
-    con_out.output_char16_string(system_table().firmware_vendor);
-    print!(", revision: {}.{}",
-        system_table().firmware_revision >> 16,
-        system_table().firmware_revision & 0xFFFF);
-    println!();
+    let status = system_table().boot_services.get_memory_map(&mut mmap);
+    if status != Status::Success {
+        println!("Failed to obtain EFI memory map: status={}", status.to_str());
+        return Status::Err;
+    }
+
+    for item in mmap.iter().unwrap() {
+        println!("Item: 0x{:016x} .. 0x{:016x}", item.begin(), item.end());
+    }
 
     return Status::Success;
 }
 
 #[no_mangle]
-extern "C" fn efi_main(_ih: Handle, st: *mut SystemTable) -> isize {
+extern "C" fn efi_main(_ih: Handle, st: *mut SystemTable) -> u64 {
     efi::init_tables(st);
-    return main().to_isize();
+    return main().to_num();
 }
 
 use core::panic::PanicInfo;

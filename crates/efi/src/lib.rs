@@ -9,6 +9,12 @@ pub use proto::stop::*;
 pub mod base;
 pub use base::*;
 
+pub mod mmap;
+pub use mmap::*;
+
+pub mod boot;
+pub use boot::BootServices;
+
 #[repr(C)]
 pub struct TableHeader {
     signature:      u64,
@@ -26,19 +32,13 @@ pub struct SystemTable {
     console_in_handle:          Handle,
     con_in:                     *mut c_void,    // TODO
     console_out_handle:         Handle,
-    con_out:                    *mut SimpleTextOutputProtocol,
+    pub con_out:                &'static mut SimpleTextOutputProtocol,
     standard_error_handle:      Handle,
-    std_err:                    *mut SimpleTextOutputProtocol,
-    runtime_services:           *mut c_void,    // TODO
-    boot_services:              *mut c_void,    // TODO
+    pub std_err:                &'static mut SimpleTextOutputProtocol,
+    runtime_services:           *mut c_void,        // TODO
+    pub boot_services:          &'static mut BootServices,  // TODO
     number_of_table_entries:    usize,
-    configuration_table:        *mut c_void     // TODO
-}
-
-impl SystemTable {
-    pub fn con_out(&self) -> &'static mut SimpleTextOutputProtocol {
-        unsafe { &mut *self.con_out }
-    }
+    configuration_table:        *mut c_void         // TODO
 }
 
 static mut SYSTEM_TABLE: *mut SystemTable = null_mut();

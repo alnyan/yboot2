@@ -14,5 +14,5 @@ macro_rules! println {
 
 pub fn do_println(args: fmt::Arguments) {
     use core::fmt::Write;
-    system_table().con_out().write_fmt(args).unwrap();
+    system_table().con_out.write_fmt(args).unwrap();
 }

@@ -6,13 +6,13 @@ use core::fmt;
 #[repr(C)]
 pub struct SimpleTextOutputProtocol {
     fn_reset: *mut c_void,
-    fn_output_string: unsafe fn(&SimpleTextOutputProtocol, s: *const i16) -> isize
+    fn_output_string: unsafe fn(&SimpleTextOutputProtocol, s: *const i16) -> u64
 }
 
 impl SimpleTextOutputProtocol {
     // Not the original name provided by EFI, but whatever
     pub fn output_char16_string(&self, s: *const i16) -> Status {
-        unsafe { Status::from_isize((self.fn_output_string)(self, s)) }
+        unsafe { Status::from_num((self.fn_output_string)(self, s)) }
     }
 
     pub fn output_string(&self, s: &str) {
