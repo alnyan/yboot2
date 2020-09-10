@@ -3,7 +3,13 @@
 BIOS=/usr/share/edk2-ovmf/OVMF_CODE.fd
 IMAGE=target/x86_64-unknown-uefi/debug/image.fat32
 
-make
+set -e
+
+cargo build -Z build-std=core
+
+dd if=/dev/zero of=${IMAGE} bs=1M count=64
+mkfs.vfat -F32 ${IMAGE}
+mcopy -i ${IMAGE} target/x86_64-unknown-uefi/debug/yboot2.efi ::app.efi
 
 qemu-system-x86_64 \
     -drive format=raw,file=$BIOS,readonly=on,if=pflash \
