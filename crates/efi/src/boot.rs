@@ -1,5 +1,6 @@
 use core::ffi::c_void;
 use super::{
+    Event,
     Guid,
     Handle,
     TableHeader,
@@ -25,7 +26,7 @@ pub struct BootServices {
     free_pool:                      *mut c_void,
     create_event:                   *mut c_void,
     set_timer:                      *mut c_void,
-    wait_for_event:                 *mut c_void,
+    wait_for_event:                 unsafe fn (usize, *const Event, *mut usize) -> u64,
     signal_event:                   *mut c_void,
     close_event:                    *mut c_void,
     check_event:                    *mut c_void,
@@ -75,6 +76,18 @@ impl BootServices {
                 (&mut out.key)                  as *mut usize,
                 (&mut out.descriptor_size)      as *mut usize,
                 (&mut trash)                    as *mut u32
+            )
+        });
+    }
+
+    // Unlike EFI's variant, just for one event
+    pub fn wait_for_event(&self, ev: Event) -> Status {
+        let mut index = 0usize;
+        return Status::from_num(unsafe {
+            (self.wait_for_event)(
+                1,
+                &ev,
+                &mut index
             )
         });
     }

@@ -21,6 +21,14 @@ fn main() -> Status {
         return Status::Err;
     }
 
+    system_table().con_in.reset(false);
+    while let Ok(key) = system_table().con_in.read_key_blocking() {
+        println!("Got key: {:?}", key);
+        if key.scan_code == 23 {
+            break;
+        }
+    }
+
     return Status::Success;
 }
 

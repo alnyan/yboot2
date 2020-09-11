@@ -1,4 +1,5 @@
 pub mod stop;
+pub mod stip;
 pub mod gop;
 
 pub trait Protocol {
@@ -6,4 +7,5 @@ pub trait Protocol {
 }
 
 pub use stop::SimpleTextOutputProtocol;
+pub use stip::SimpleTextInputProtocol;
 pub use gop::GraphicsOutputProtocol;

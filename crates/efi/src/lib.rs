@@ -32,7 +32,7 @@ pub struct SystemTable {
     pub firmware_vendor:        *const i16,
     pub firmware_revision:      u32,
     console_in_handle:          Handle,
-    con_in:                     *mut c_void,    // TODO
+    pub con_in:                 &'static mut SimpleTextInputProtocol,
     console_out_handle:         Handle,
     pub con_out:                &'static mut SimpleTextOutputProtocol,
     standard_error_handle:      Handle,
