@@ -1,3 +1,4 @@
+#![feature(asm)]
 #![no_main]
 #![no_std]
 
@@ -12,28 +13,27 @@ mod println;
 fn main() -> Status {
     let mut desc_array = [0u8; 4096];
     let mut mmap = efi::MemoryMap::new(&mut desc_array);
+    let bs = &system_table().boot_services;
+    let rs = &system_table().runtime_services;
 
-    let status = system_table().boot_services.get_memory_map(&mut mmap);
-    if status != Status::Success {
-        println!("Failed to obtain EFI memory map: status={}", status.to_str());
+    if bs.get_memory_map(&mut mmap) != Status::Success {
+        println!("Failed to get memory map");
         return Status::Err;
-    }
-
-    for item in mmap.iter().unwrap() {
-        println!("Item: 0x{:016x} .. 0x{:016x}", item.begin(), item.end());
     }
 
     return Status::Success;
 }
 
 #[no_mangle]
-extern "C" fn efi_main(_ih: Handle, st: *mut SystemTable) -> u64 {
-    efi::init_tables(st);
+extern "C" fn efi_main(ih: Handle, st: *mut SystemTable) -> u64 {
+    efi::init(ih, st);
     return main().to_num();
 }
 
 use core::panic::PanicInfo;
 #[panic_handler]
-fn panic(_panic: &PanicInfo<'_>) -> ! {
-    loop {}
+fn panic(panic: &PanicInfo<'_>) -> ! {
+    // TODO: check if BS are available
+    println!("Panic: {}!", panic);
+    system_table().boot_services.exit(Status::Err);
 }

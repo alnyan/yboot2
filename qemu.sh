@@ -12,6 +12,7 @@ mkfs.vfat -F32 ${IMAGE}
 mcopy -i ${IMAGE} target/x86_64-unknown-uefi/debug/yboot2.efi ::app.efi
 
 qemu-system-x86_64 \
+    -serial stdio \
     -m 256 \
     -drive format=raw,file=$BIOS,readonly=on,if=pflash \
     -drive format=raw,file=$IMAGE \
