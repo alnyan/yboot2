@@ -2,13 +2,6 @@ use crate::{Status, Guid};
 use crate::proto::Protocol;
 use core::ffi::c_void;
 
-const GRAPHICS_OUTPUT_PROTOCOL_GUID: Guid = Guid {
-    data1:  0x9042a9de,
-    data2:  0x23dc,
-    data3:  0x4a38,
-    data4:  [0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a]
-};
-
 #[repr(C)]
 pub struct Mode {
     pub max_mode:           u32,
@@ -62,9 +55,12 @@ pub struct ModeIterator<'a> {
 }
 
 impl Protocol for GraphicsOutputProtocol {
-    fn guid() -> &'static Guid {
-        return &GRAPHICS_OUTPUT_PROTOCOL_GUID;
-    }
+    const GUID: Guid = Guid {
+        data1:  0x9042a9de,
+        data2:  0x23dc,
+        data3:  0x4a38,
+        data4:  [0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a]
+    };
 }
 
 impl GraphicsOutputProtocol {

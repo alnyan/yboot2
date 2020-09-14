@@ -109,7 +109,7 @@ impl BootServices {
     }
 
     pub fn locate_protocol<T: Protocol>(&self) -> Result<&'static mut T, Status> {
-        let guid = <T as Protocol>::guid();
+        let guid = &<T as Protocol>::GUID;
         let mut proto_ptr: *mut c_void = core::ptr::null_mut();
 
         match Status::from_num(unsafe {

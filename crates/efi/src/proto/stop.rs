@@ -1,14 +1,7 @@
-use crate::{Status, Guid};
+use crate::{Status, Guid, Protocol};
 
 use core::ffi::c_void;
 use core::fmt;
-
-const SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID: Guid = Guid {
-    data1:  0x387477c2,
-    data2:  0x69c7,
-    data3:  0x11d2,
-    data4:  [0x82, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b]
-};
 
 #[repr(C)]
 pub struct SimpleTextOutputProtocol {
@@ -16,10 +9,13 @@ pub struct SimpleTextOutputProtocol {
     fn_output_string: unsafe fn(&SimpleTextOutputProtocol, s: *const i16) -> u64
 }
 
-impl super::Protocol for SimpleTextOutputProtocol {
-    fn guid() -> &'static Guid {
-        return &SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID;
-    }
+impl Protocol for SimpleTextOutputProtocol {
+    const GUID: Guid = Guid {
+        data1:  0x387477c2,
+        data2:  0x69c7,
+        data3:  0x11d2,
+        data4:  [0x82, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b]
+    };
 }
 
 impl SimpleTextOutputProtocol {

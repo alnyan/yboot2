@@ -3,7 +3,8 @@ pub mod stip;
 pub mod gop;
 
 pub trait Protocol {
-    fn guid() -> &'static super::Guid;
+    const GUID: super::Guid;
+    //fn guid() -> &'static super::Guid;
 }
 
 pub use stop::SimpleTextOutputProtocol;
