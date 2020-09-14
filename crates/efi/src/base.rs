@@ -3,13 +3,19 @@ use core::ffi::c_void;
 pub type Handle = *mut c_void;
 pub type Event = *mut c_void;
 
-#[derive(Eq, PartialEq, Debug)]
+pub type Result<T> = core::result::Result<T, Status>;
+
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Status {
     Success,
     Err,
     InvalidParameter,
     BufferTooSmall,
     NotReady
+}
+
+pub trait Termination {
+    fn to_efi(&self) -> u64;
 }
 
 const EFI_SUCCESS:                  u64 = 0;
@@ -36,6 +42,37 @@ impl Status {
             EFI_BUFFER_TOO_SMALL    => Status::BufferTooSmall,
             EFI_NOT_READY           => Status::NotReady,
             _                       => Status::Err
+        }
+    }
+
+    pub fn to_result(&self) -> Result<()> {
+        match self {
+            Status::Success => Ok(()),
+            err             => Err(*err)
+        }
+    }
+}
+
+impl Termination for () {
+    fn to_efi(&self) -> u64 {
+        return EFI_SUCCESS;
+    }
+}
+
+impl Termination for ! {
+    fn to_efi(&self) -> u64 {
+        return EFI_ERR;
+    }
+}
+
+impl<T> Termination for Result<T> {
+    fn to_efi(&self) -> u64 {
+        match self {
+            Ok(_)       => EFI_SUCCESS,
+            Err(err)    => {
+                assert!(*err != Status::Success);
+                err.to_num()
+            }
         }
     }
 }

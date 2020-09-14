@@ -10,32 +10,23 @@ use efi::{Status, Handle, SystemTable, system_table};
 #[macro_use]
 mod println;
 
-fn main() -> Status {
+fn main() -> efi::Result<()> {
     let mut desc_array = [0u8; 4096];
     let mut mmap = efi::MemoryMap::new(&mut desc_array);
     let bs = &system_table().boot_services;
     let rs = &system_table().runtime_services;
 
-    if bs.get_memory_map(&mut mmap) != Status::Success {
-        println!("Failed to get memory map");
-        return Status::Err;
-    }
+    bs.get_memory_map(&mut mmap)?;
 
-    system_table().con_in.reset(false);
-    while let Ok(key) = system_table().con_in.read_key_blocking() {
-        println!("Got key: {:?}", key);
-        if key.scan_code == 23 {
-            break;
-        }
-    }
-
-    return Status::Success;
+    Ok(())
 }
 
 #[no_mangle]
 extern "C" fn efi_main(ih: Handle, st: *mut SystemTable) -> u64 {
     efi::init(ih, st);
-    return main().to_num();
+    let ret = efi::Termination::to_efi(&main());
+    println!("result -> {}", ret);
+    return ret;
 }
 
 use core::panic::PanicInfo;

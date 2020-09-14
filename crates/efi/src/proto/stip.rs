@@ -16,17 +16,14 @@ pub struct SimpleTextInputProtocol {
 }
 
 impl SimpleTextInputProtocol {
-    pub fn reset(&mut self, extended_verification: bool) -> Status {
+    pub fn reset(&mut self, extended_verification: bool) -> Result<(), Status> {
         return Status::from_num(unsafe {
             (self.reset)(self as *mut SimpleTextInputProtocol, extended_verification)
-        });
+        }).to_result();
     }
 
     pub fn read_key_blocking(&mut self) -> Result<InputKey, Status> {
-        let res = system_table().boot_services.wait_for_event(self.wait_for_key);
-        if res != Status::Success {
-            return Err(res);
-        }
+        let res = system_table().boot_services.wait_for_event(self.wait_for_key)?;
         loop {
             let res = self.read_key_stroke();
             match res {

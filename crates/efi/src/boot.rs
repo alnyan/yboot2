@@ -66,7 +66,7 @@ pub struct BootServices {
 }
 
 impl BootServices {
-    pub fn get_memory_map(&self, out: &mut MemoryMap) -> Status {
+    pub fn get_memory_map(&self, out: &mut MemoryMap) -> Result<(), Status> {
         out.size = out.storage_ref.len();
         return Status::from_num(unsafe {
             let mut trash: u32 = 0;
@@ -77,11 +77,11 @@ impl BootServices {
                 (&mut out.descriptor_size)      as *mut usize,
                 (&mut trash)                    as *mut u32
             )
-        });
+        }).to_result();
     }
 
     // Unlike EFI's variant, just for one event
-    pub fn wait_for_event(&self, ev: Event) -> Status {
+    pub fn wait_for_event(&self, ev: Event) -> Result<(), Status> {
         let mut index = 0usize;
         return Status::from_num(unsafe {
             (self.wait_for_event)(
@@ -89,7 +89,7 @@ impl BootServices {
                 &ev,
                 &mut index
             )
-        });
+        }).to_result();
     }
 
     pub fn exit(&self, status: Status) -> ! {
@@ -102,10 +102,10 @@ impl BootServices {
         unsafe { (self.stall)(micros) }
     }
 
-    pub fn exit_boot_services(&self, map_key: usize) -> Status {
+    pub fn exit_boot_services(&self, map_key: usize) -> Result<(), Status> {
         return Status::from_num(unsafe {
             (self.exit_boot_services)(super::image_handle(), map_key)
-        });
+        }).to_result();
     }
 
     pub fn locate_protocol<T: Protocol>(&self) -> Result<&'static mut T, Status> {
