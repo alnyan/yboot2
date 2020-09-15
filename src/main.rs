@@ -5,7 +5,7 @@
 extern crate efi;
 extern crate core_rt;
 
-use efi::{Status, Handle, SystemTable, system_table};
+use efi::{Status, Handle, SystemTable, ConfigurationTableEntry, system_table};
 
 #[macro_use]
 mod println;

@@ -77,6 +77,7 @@ impl<T> Termination for Result<T> {
     }
 }
 
+#[derive(Eq, PartialEq)]
 pub struct Guid {
     pub data1:  u32,
     pub data2:  u16,
