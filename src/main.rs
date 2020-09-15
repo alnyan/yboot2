@@ -5,7 +5,13 @@
 extern crate efi;
 extern crate core_rt;
 
-use efi::{Status, Handle, SystemTable, ConfigurationTableEntry, system_table};
+use efi::{
+    Status,
+    ImageHandle,
+    SystemTable,
+    system_table,
+    image_handle
+};
 
 #[macro_use]
 mod println;
@@ -18,11 +24,14 @@ fn main() -> efi::Result<()> {
 
     bs.get_memory_map(&mut mmap)?;
 
+    let path = image_handle().get_boot_path()?;
+    let root = path.open_partition()?;
+
     Ok(())
 }
 
 #[no_mangle]
-extern "C" fn efi_main(ih: Handle, st: *mut SystemTable) -> u64 {
+extern "C" fn efi_main(ih: *mut ImageHandle, st: *mut SystemTable) -> u64 {
     efi::init(ih, st);
     let ret = efi::Termination::to_efi(&main());
     println!("result -> {}", ret);

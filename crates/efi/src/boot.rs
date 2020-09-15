@@ -10,6 +10,15 @@ use super::{
 };
 use crate::proto::Protocol;
 
+pub const EFI_OPEN_PROTOCOL_GET_PROTOCOL: u32 = 1 << 1;
+
+#[repr(C)]
+pub enum LocateSearchType {
+    AllHandles,
+    ByRegisterNotify,
+    ByProtocol
+}
+
 #[repr(C)]
 pub struct BootServices {
     hdr:                            TableHeader,
@@ -33,7 +42,7 @@ pub struct BootServices {
     install_protocol_interface:     *mut c_void,
     reinstall_protocol_interface:   *mut c_void,
     uninstall_protocol_interface:   *mut c_void,
-    handle_protocol:                *mut c_void,
+    handle_protocol:                unsafe fn (Handle, *const Guid, *mut *mut c_void) -> u64,
     reserved:                       *mut c_void,
     register_protocol_notify:       *mut c_void,
     locate_handle:                  *mut c_void,
@@ -49,11 +58,16 @@ pub struct BootServices {
     set_watchdog_timer:             *mut c_void,
     connect_controller:             *mut c_void,
     disconnect_controller:          *mut c_void,
-    open_protocol:                  *mut c_void,
+    open_protocol:                  unsafe fn (Handle, *const Guid, *mut *mut c_void,
+                                               Handle, Handle, u32) -> u64,
     close_protocol:                 *mut c_void,
     open_protocol_information:      *mut c_void,
     protocols_per_handle:           *mut c_void,
-    locate_handle_buffer:           *mut c_void,
+    locate_handle_buffer:           unsafe fn (LocateSearchType,
+                                               *const Guid,
+                                               *mut c_void,
+                                               *mut usize,
+                                               *mut *mut Handle) -> u64,
     locate_protocol:                unsafe fn (*const Guid, *mut c_void, *mut *mut c_void) -> u64,
     /*
     EFI_INSTALL_MULTIPLE_PROTOCOL_INTERFACES    InstallMultipleProtocolInterfaces;
@@ -63,6 +77,12 @@ pub struct BootServices {
     EFI_SET_MEM                                 SetMem;
     EFI_CREATE_EVENT_EX                         CreateEventEx;
 */
+}
+
+pub struct HandleBufferIterator {
+    buffer:     *mut Handle,
+    index:      usize,
+    count:      usize,
 }
 
 impl BootServices {
@@ -94,7 +114,7 @@ impl BootServices {
 
     pub fn exit(&self, status: Status) -> ! {
         unsafe {
-            (self.exit)(super::image_handle(), status.to_num(), 0, core::ptr::null());
+            (self.exit)(Handle::from(super::image_handle()), status.to_num(), 0, core::ptr::null());
         }
     }
 
@@ -104,7 +124,7 @@ impl BootServices {
 
     pub fn exit_boot_services(&self, map_key: usize) -> Result<(), Status> {
         return Status::from_num(unsafe {
-            (self.exit_boot_services)(super::image_handle(), map_key)
+            (self.exit_boot_services)(Handle::from(super::image_handle()), map_key)
         }).to_result();
     }
 
@@ -121,6 +141,83 @@ impl BootServices {
         }) {
             Status::Success => Ok(unsafe {(proto_ptr as *mut T).as_mut()}.unwrap()),
             err             => Err(err)
+        }
+    }
+
+    pub fn handle_protocol<T: Protocol>(&self, handle: Handle) -> Result<&'static mut T, Status> {
+        let guid = &<T as Protocol>::GUID;
+        let mut proto_ptr: *mut c_void = core::ptr::null_mut();
+
+        match Status::from_num(unsafe {
+            (self.handle_protocol)(
+                handle,
+                guid,
+                &mut proto_ptr
+            )
+        }) {
+            Status::Success => Ok(unsafe {(proto_ptr as *mut T).as_mut()}.unwrap()),
+            err             => Err(err)
+        }
+    }
+
+    pub fn open_protocol<T: Protocol>(&self,
+                                      handle: Handle,
+                                      agent: Handle,
+                                      controller: Handle,
+                                      attr: u32) -> Result<&'static mut T, Status> {
+        let guid = &<T as Protocol>::GUID;
+        let mut proto_ptr: *mut c_void = core::ptr::null_mut();
+
+        match Status::from_num(unsafe {
+            (self.open_protocol)(
+                handle,
+                guid,
+                &mut proto_ptr,
+                agent,
+                controller,
+                attr
+            )
+        }) {
+            Status::Success => Ok(unsafe {(proto_ptr as *mut T).as_mut()}.unwrap()),
+            err             => Err(err)
+        }
+    }
+
+    pub fn handle_buffer_iter<T: Protocol>(&self,
+                              search_type: LocateSearchType,
+                              search_key: *mut c_void) -> Result<HandleBufferIterator, Status> {
+        let guid = &<T as Protocol>::GUID;
+        let mut iter: HandleBufferIterator = HandleBufferIterator {
+            buffer: core::ptr::null_mut(),
+            index: 0,
+            count: 0
+        };
+
+        match Status::from_num(unsafe {
+            (self.locate_handle_buffer)(
+                search_type,
+                guid,
+                search_key,
+                &mut iter.count,
+                &mut iter.buffer
+            )
+        }) {
+            Status::Success => Ok(iter),
+            err             => Err(err)
+        }
+    }
+}
+
+impl Iterator for HandleBufferIterator {
+    type Item = Handle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.count {
+            None
+        } else {
+            let ret = unsafe {*(self.buffer.offset(self.index as isize))};
+            self.index += 1;
+            Some(ret)
         }
     }
 }

@@ -18,6 +18,9 @@ pub use boot::BootServices;
 pub mod runtime;
 pub use runtime::RuntimeServices;
 
+mod image;
+pub use image::ImageHandle;
+
 #[repr(C)]
 pub struct TableHeader {
     signature:      u64,
@@ -100,9 +103,9 @@ impl SystemTable {
 }
 
 static mut SYSTEM_TABLE: *mut SystemTable = null_mut();
-static mut IMAGE_HANDLE: Handle = null_mut();
+static mut IMAGE_HANDLE: *mut ImageHandle = null_mut();
 
-pub fn init(ih: Handle, st: *mut SystemTable) {
+pub fn init(ih: *mut ImageHandle, st: *mut SystemTable) {
     if st.is_null() || ih.is_null() {
         panic!();
     }
@@ -116,6 +119,6 @@ pub fn system_table() -> &'static mut SystemTable {
     unsafe { &mut *SYSTEM_TABLE }
 }
 
-pub fn image_handle() -> Handle {
+pub fn image_handle() -> &'static mut ImageHandle {
     unsafe { &mut *IMAGE_HANDLE }
 }
