@@ -1,8 +1,14 @@
-use crate::{CStr16, Status};
+use crate::{CStr16, Status, Guid};
 use core::ptr::null_mut;
 use core::ffi::c_void;
 
 pub const OPEN_MODE_READ: u64 = 1;
+pub const FILE_INFO_GUID: Guid = Guid {
+    data1: 0x09576e92,
+    data2: 0x6d3f,
+    data3: 0x11d2,
+    data4: [0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b]
+};
 
 #[repr(C)]
 pub struct FileProtocol {
@@ -17,6 +23,17 @@ pub struct FileProtocol {
     write:          *mut c_void,
     get_position:   *mut c_void,
     set_position:   unsafe fn (*mut FileProtocol, u64) -> u64,
+    get_info:       unsafe fn (*mut FileProtocol,
+                               *const Guid,
+                               *mut usize,
+                               *mut c_void) -> u64,
+}
+
+#[repr(C)]
+pub struct Stat {
+    pub size:       u64,
+    pub file_size:  u64,
+    // ...
 }
 
 pub struct File {
@@ -80,5 +97,20 @@ impl File {
                 pos
             )
         }).into()
+    }
+
+    pub fn stat(&mut self, statbuf: &mut [u8]) -> Result<&Stat, Status> {
+        let mut len = statbuf.len();
+        match Status::from(unsafe {
+            ((*self.inner).get_info)(
+                self.inner,
+                &FILE_INFO_GUID,
+                &mut len,
+                statbuf.as_mut_ptr() as *mut _
+            )
+        }) {
+            Status::Success     => Ok(unsafe {core::mem::transmute(statbuf.as_ptr())}),
+            err                 => Err(err)
+        }
     }
 }

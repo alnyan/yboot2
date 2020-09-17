@@ -50,18 +50,21 @@ struct Shdr {
 #[repr(C)]
 struct Phdr {
     _type:      Word,
+    flags:      Word,
     offset:     Off,
     vaddr:      Addr,
     paddr:      Addr,
-    filesz:     Word,
-    memsz:      Word,
-    flags:      Word,
-    align:      Word
+    filesz:     XWord,
+    memsz:      XWord,
+    align:      XWord
 }
 
 pub struct Object {
-    file:   File,
-    ehdr:   Ehdr,
+    file:       File,
+    ehdr:       Ehdr,
+
+    pub start:  usize,
+    pub end:    usize
 }
 
 unsafe fn any_as_u8_slice<T: Sized>(p: &mut T) -> &mut [u8] {
@@ -77,6 +80,8 @@ impl Object {
         let mut obj = Object {
             file: root.open(path, efi::proto::fp::OPEN_MODE_READ, 0)?,
             ehdr: unsafe { MaybeUninit::uninit().assume_init() },
+            start: 0xFFFFFFFFFFFFFFFF,
+            end: 0,
         };
 
         // Load header
@@ -148,12 +153,20 @@ impl Object {
         let mut phdr = unsafe { MaybeUninit::<Phdr>::uninit().assume_init() };
 
         // 1. Check that all pages in load segments are usable
+        //    Also find out kernel's lowest and highest physical addresses
         for i in 0 .. self.ehdr.phnum {
             self.read_phdr(&mut phdr, i as usize)?;
 
             if phdr._type == PT_LOAD {
                 let start = phdr.paddr & !0xFFF;
                 let end = (phdr.paddr + phdr.memsz as u64 + 0xFFF) & !0xFFF;
+
+                if (start as usize) < self.start {
+                    self.start = start as usize;
+                }
+                if (end as usize) > self.end {
+                    self.end = end as usize;
+                }
 
                 for addr in (start .. end).step_by(0x1000) {
                     if !mmap.is_usable_now(addr as usize) {

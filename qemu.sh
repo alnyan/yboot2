@@ -14,7 +14,7 @@ cargo build -Z build-std=core
 dd if=/dev/zero of=${IMAGE} bs=1M count=64
 mkfs.vfat -F32 ${IMAGE}
 mcopy -i ${IMAGE} target/${TARGET}/${CONFIG}/yboot2.efi ::app.efi
-mcopy -i ${IMAGE} image/config.txt ::config.txt
+mcopy -i ${IMAGE} image/initrd.img ::initrd.img
 mcopy -i ${IMAGE} image/kernel.elf ::kernel.elf
 
 qemu-system-x86_64 \

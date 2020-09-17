@@ -19,6 +19,7 @@ use efi::{
 
 #[macro_use]
 mod println;
+mod initrd;
 mod proto;
 mod elf;
 
@@ -39,11 +40,17 @@ fn main() -> efi::Result<()> {
         .unwrap();
 
     let mut root = image_handle().get_boot_path()?.open_partition()?;
+
+    // Load kernel
     let mut obj = elf::Object::open(&mut root, CStr16::from_literal(cstr16!(r"\kernel.elf")))?;
     let entry = obj.load(&mmap)?;
     let data = obj.locate_protocol_data::<proto::V1>()?;
 
-    // TODO: load initrd
+    // Load initrd
+    let (initrd_base, initrd_size) = initrd::load_somewhere(&mut root,
+        CStr16::from_literal(cstr16!(r"\initrd.img")),
+        &mmap,
+        &obj)?;
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap)?;
@@ -51,7 +58,7 @@ fn main() -> efi::Result<()> {
 
     use proto::LoadProtocol;
     data.set_mmap(&mmap);
-    data.set_initrd(0, 0);
+    data.set_initrd(initrd_base, initrd_size);
     data.set_acpi_rsdp(rsdp as usize);
     data.set_loader_magic();
 
