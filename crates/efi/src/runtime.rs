@@ -10,11 +10,11 @@ pub struct RuntimeServices {
 impl RuntimeServices {
     pub fn get_time(&self) -> Result<u64, Status> {
         let mut time = 0u64;
-        return match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.get_time)((&mut time) as *mut u64, core::ptr::null_mut())
         }) {
             Status::Success => Ok(time),
             err             => Err(err)
-        };
+        }
     }
 }

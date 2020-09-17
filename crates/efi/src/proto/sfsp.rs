@@ -20,7 +20,7 @@ impl SimpleFileSystemProtocol {
     pub fn open_volume(&mut self) -> Result<File, Status> {
         let mut root: *mut FileProtocol = null_mut();
 
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.open_volume)(
                 self,
                 &mut root

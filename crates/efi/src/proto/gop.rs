@@ -73,12 +73,12 @@ impl GraphicsOutputProtocol {
     }
 
     pub fn set_mode(&mut self, num: u32) -> Result<&'static Mode, Status> {
-        return match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.set_mode)(self as *mut GraphicsOutputProtocol, num)
         }) {
             Status::Success => Ok(self.mode),
             err             => Err(err)
-        };
+        }
     }
 
     // TODO: pixel format
@@ -103,7 +103,7 @@ impl<'a> Iterator for ModeIterator<'a> {
         let mut mode: *mut ModeInformation = core::ptr::null_mut();
         let mut junk: usize = 0;
 
-        return match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.protocol.query_mode)(
                 self.protocol as *const GraphicsOutputProtocol,
                 self.number,
@@ -116,7 +116,7 @@ impl<'a> Iterator for ModeIterator<'a> {
                 unsafe {mode.as_ref()}.map(|x| { (self.number - 1, x) })
             },
             _ => None
-        };
+        }
     }
 }
 

@@ -88,7 +88,7 @@ pub struct HandleBufferIterator {
 impl BootServices {
     pub fn get_memory_map(&self, out: &mut MemoryMap) -> Result<(), Status> {
         out.size = out.storage_ref.len();
-        return Status::from_num(unsafe {
+        Status::from(unsafe {
             let mut trash: u32 = 0;
             (self.get_memory_map)(
                 (&mut out.size)                 as *mut usize,
@@ -97,24 +97,24 @@ impl BootServices {
                 (&mut out.descriptor_size)      as *mut usize,
                 (&mut trash)                    as *mut u32
             )
-        }).to_result();
+        }).into()
     }
 
     // Unlike EFI's variant, just for one event
     pub fn wait_for_event(&self, ev: Event) -> Result<(), Status> {
         let mut index = 0usize;
-        return Status::from_num(unsafe {
+        Status::from(unsafe {
             (self.wait_for_event)(
                 1,
                 &ev,
                 &mut index
             )
-        }).to_result();
+        }).into()
     }
 
     pub fn exit(&self, status: Status) -> ! {
         unsafe {
-            (self.exit)(Handle::from(super::image_handle()), status.to_num(), 0, core::ptr::null());
+            (self.exit)(Handle::from(super::image_handle()), status.into(), 0, core::ptr::null());
         }
     }
 
@@ -123,16 +123,16 @@ impl BootServices {
     }
 
     pub fn exit_boot_services(&self, map_key: usize) -> Result<(), Status> {
-        return Status::from_num(unsafe {
+        Status::from(unsafe {
             (self.exit_boot_services)(Handle::from(super::image_handle()), map_key)
-        }).to_result();
+        }).into()
     }
 
     pub fn locate_protocol<T: Protocol>(&self) -> Result<&'static mut T, Status> {
         let guid = &<T as Protocol>::GUID;
         let mut proto_ptr: *mut c_void = core::ptr::null_mut();
 
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.locate_protocol)(
                 guid as *const Guid,
                 core::ptr::null_mut(),
@@ -148,7 +148,7 @@ impl BootServices {
         let guid = &<T as Protocol>::GUID;
         let mut proto_ptr: *mut c_void = core::ptr::null_mut();
 
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.handle_protocol)(
                 handle,
                 guid,
@@ -168,7 +168,7 @@ impl BootServices {
         let guid = &<T as Protocol>::GUID;
         let mut proto_ptr: *mut c_void = core::ptr::null_mut();
 
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.open_protocol)(
                 handle,
                 guid,
@@ -193,7 +193,7 @@ impl BootServices {
             count: 0
         };
 
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.locate_handle_buffer)(
                 search_type,
                 guid,

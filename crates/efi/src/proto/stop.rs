@@ -21,7 +21,7 @@ impl Protocol for SimpleTextOutputProtocol {
 impl SimpleTextOutputProtocol {
     // Not the original name provided by EFI, but whatever
     pub fn output_char16_string(&self, s: *const i16) -> Status {
-        unsafe { Status::from_num((self.fn_output_string)(self, s)) }
+        Status::from(unsafe { (self.fn_output_string)(self, s) })
     }
 
     pub fn output_string(&self, s: &str) {

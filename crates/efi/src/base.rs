@@ -25,9 +25,9 @@ const EFI_INVALID_PARAMETER:        u64 = EFI_ERR | 0x02;
 const EFI_BUFFER_TOO_SMALL:         u64 = EFI_ERR | 0x05;
 const EFI_NOT_READY:                u64 = EFI_ERR | 0x06;
 
-impl Status {
-    pub fn to_num(self) -> u64 {
-        match self {
+impl From<Status> for u64 {
+    fn from(s: Status) -> u64 {
+        match s {
             Status::Success             => EFI_SUCCESS,
             Status::Err                 => EFI_ERR,
             Status::InvalidParameter    => EFI_INVALID_PARAMETER,
@@ -35,8 +35,11 @@ impl Status {
             Status::NotReady            => EFI_NOT_READY,
         }
     }
-    pub fn from_num(v: u64) -> Status {
-        match v {
+}
+
+impl From<u64> for Status {
+    fn from(s: u64) -> Self {
+        match s {
             0                       => Status::Success,
             EFI_ERR                 => Status::Err,
             EFI_INVALID_PARAMETER   => Status::InvalidParameter,
@@ -45,11 +48,13 @@ impl Status {
             _                       => Status::Err
         }
     }
+}
 
-    pub fn to_result(&self) -> Result<()> {
-        match self {
+impl From<Status> for core::result::Result<(), Status> {
+    fn from(s: Status) -> Self {
+        match s {
             Status::Success => Ok(()),
-            err             => Err(*err)
+            err             => Err(err)
         }
     }
 }
@@ -68,11 +73,11 @@ impl Termination for ! {
 
 impl<T> Termination for Result<T> {
     fn to_efi(&self) -> u64 {
-        match self {
+        match *self {
             Ok(_)       => EFI_SUCCESS,
             Err(err)    => {
-                assert!(*err != Status::Success);
-                err.to_num()
+                assert!(err != Status::Success);
+                err.into()
             }
         }
     }

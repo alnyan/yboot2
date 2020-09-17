@@ -45,7 +45,7 @@ impl Drop for File {
 impl File {
     pub fn open(&self, name: &CStr16, mode: u64, attr: u64) -> Result<File, Status> {
         let mut ptr: *mut FileProtocol = null_mut();
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             ((*self.inner).open)(
                 self.inner,
                 &mut ptr,
@@ -61,7 +61,7 @@ impl File {
 
     pub fn read(&mut self, buf: &mut [u8]) -> Result<usize, Status> {
         let mut len = buf.len();
-        match Status::from_num(unsafe {
+        match Status::from(unsafe {
             ((*self.inner).read)(
                 self.inner,
                 &mut len,
@@ -74,11 +74,11 @@ impl File {
     }
 
     pub fn seek(&mut self, pos: u64) -> Result<(), Status> {
-        Status::from_num(unsafe {
+        Status::from(unsafe {
             ((*self.inner).set_position)(
                 self.inner,
                 pos
             )
-        }).to_result()
+        }).into()
     }
 }

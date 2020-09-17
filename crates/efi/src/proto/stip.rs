@@ -25,9 +25,9 @@ impl Protocol for SimpleTextInputProtocol {
 
 impl SimpleTextInputProtocol {
     pub fn reset(&mut self, extended_verification: bool) -> Result<(), Status> {
-        return Status::from_num(unsafe {
+        Status::from(unsafe {
             (self.reset)(self as *mut SimpleTextInputProtocol, extended_verification)
-        }).to_result();
+        }).into()
     }
 
     pub fn read_key_blocking(&mut self) -> Result<InputKey, Status> {
@@ -44,7 +44,7 @@ impl SimpleTextInputProtocol {
 
     pub fn read_key_stroke(&mut self) -> Result<InputKey, Status> {
         let mut stroke = InputKey { scan_code: 0, unicode_char: 0 };
-        return match Status::from_num(unsafe {
+        match Status::from(unsafe {
             (self.read_key_stroke)(
                 self as *mut SimpleTextInputProtocol,
                 (&mut stroke) as *mut InputKey
@@ -52,6 +52,6 @@ impl SimpleTextInputProtocol {
         }) {
             Status::Success => Ok(stroke),
             err             => Err(err)
-        };
+        }
     }
 }
