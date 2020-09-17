@@ -15,6 +15,9 @@ impl MemoryDescriptor {
     pub fn end(&self) -> usize {
         return self.physical_start + (self.number_of_pages as usize) * 0x1000;
     }
+    pub fn is_usable_now(&self) -> bool {
+        return self._type == 7;
+    }
 }
 
 pub struct MemoryMapIterator<'a> {
@@ -67,5 +70,21 @@ impl<'a> MemoryMap<'a> {
             pos: 0,
             count: self.size / self.descriptor_size
         });
+    }
+
+    pub fn is_usable_now(&self, page: usize) -> bool {
+        for item in self.iter().unwrap() {
+            if item.is_usable_now() {
+                continue;
+            }
+
+            let aligned_begin = (item.begin() + 0xFFF) & !0xFFF;
+            let aligned_end = item.end() & !0xFFF;
+
+            if page >= aligned_begin && page < aligned_end {
+                return false;
+            }
+        }
+        return true;
     }
 }

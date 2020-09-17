@@ -1,4 +1,5 @@
 use core::ffi::c_void;
+use core::fmt;
 
 pub type Handle = *mut c_void;
 pub type Event = *mut c_void;
@@ -83,4 +84,38 @@ pub struct Guid {
     pub data2:  u16,
     pub data3:  u16,
     pub data4:  [u8; 8]
+}
+
+#[repr(transparent)]
+pub struct CStr16 {
+    data: [u16]
+}
+
+impl CStr16 {
+    pub fn from_literal(data: &'static [u16]) -> &'static CStr16 {
+        return unsafe {&*(data as *const _ as *const _)};
+    }
+
+    pub fn as_ptr(&self) -> *const u16 {
+        return &self.data[0]
+    }
+}
+
+impl fmt::Debug for CStr16 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\"")?;
+        <Self as fmt::Display>::fmt(self, f)?;
+        write!(f, "\"")
+    }
+}
+
+impl fmt::Display for CStr16 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for word in self.data.iter() {
+            if *word != 0 {
+                write!(f, "{}", *word as u8 as char)?;
+            }
+        }
+        Ok(())
+    }
 }
