@@ -1,6 +1,5 @@
 use crate::{Protocol, Guid, Status, File, FileProtocol};
 use core::ptr::null_mut;
-use core::ffi::c_void;
 
 #[repr(C)]
 pub struct SimpleFileSystemProtocol {

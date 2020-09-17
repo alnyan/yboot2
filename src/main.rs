@@ -1,10 +1,9 @@
-#![feature(asm,const_fn,rustc_private,compiler_builtins)]
+#![feature(asm,const_fn)]
 #![no_main]
 #![no_std]
 
 extern crate efi;
 extern crate core_rt;
-#[macro_use]
 extern crate char16_literal;
 pub (crate) use char16_literal::cstr16;
 

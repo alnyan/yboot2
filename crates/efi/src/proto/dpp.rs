@@ -1,7 +1,6 @@
-use crate::{Protocol, Guid, Status, Handle, SimpleFileSystemProtocol, File, system_table};
-use core::ffi::c_void;
+use crate::{Protocol, Guid, Status, SimpleFileSystemProtocol, File, system_table};
 use core::ptr::null_mut;
-use core::fmt;
+use core::ffi::c_void;
 
 const EFI_END_OF_HARDWARE_DEVICE_PATH: u8 = 0x7F;
 
@@ -65,7 +64,7 @@ impl DevicePathProtocol {
     pub fn open_partition(&self) -> Result<File, Status> {
         use crate::boot::LocateSearchType::ByProtocol;
 
-        let mut iter = system_table()
+        let iter = system_table()
             .boot_services
             .handle_buffer_iter
             ::<SimpleFileSystemProtocol>(ByProtocol, null_mut())?;
@@ -94,7 +93,7 @@ impl DevicePathProtocol {
     }
 
     pub fn is_end(&self) -> bool {
-        ((self._type == EFI_END_OF_HARDWARE_DEVICE_PATH) &&
-         (self.subtype == 0xFF))
+        (self._type == EFI_END_OF_HARDWARE_DEVICE_PATH) &&
+        (self.subtype == 0xFF)
     }
 }

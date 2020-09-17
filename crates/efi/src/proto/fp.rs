@@ -1,9 +1,6 @@
-use crate::{Protocol, Guid, CStr16, Status};
+use crate::{CStr16, Status};
 use core::ptr::null_mut;
 use core::ffi::c_void;
-// Use altlib's io module
-#[cfg(feature = "with-altlib")]
-use altlib::io;
 
 pub const OPEN_MODE_READ: u64 = 1;
 
@@ -85,4 +82,3 @@ impl File {
         }).to_result()
     }
 }
-

@@ -7,9 +7,6 @@ type Addr = u64;
 type Half = u16;
 type Word = u32;
 type XWord = u64;
-type SHalf = i16;
-type SWord = i32;
-type SXWord = i64;
 
 const PT_LOAD: Word = 1;
 
