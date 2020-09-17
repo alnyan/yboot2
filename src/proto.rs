@@ -1,5 +1,5 @@
 use core::convert::TryInto;
-use efi::MemoryMap;
+use efi::{MemoryMap, gop::PixelFormat};
 
 const CMDLINE_SIZE: usize = 256;
 
@@ -10,6 +10,22 @@ pub trait LoadProtocol: Sized {
     fn set_mmap(&mut self, map: &MemoryMap);
     fn set_initrd(&mut self, base: usize, size: usize);
     fn set_acpi_rsdp(&mut self, rsdp: usize);
+    fn set_video_info(&mut self, info: &VideoInfo);
+    fn get_video_request(&self) -> VideoRequest;
+}
+
+pub struct VideoRequest {
+    pub width:      u32,
+    pub height:     u32,
+    pub format:     PixelFormat
+}
+
+pub struct VideoInfo {
+    pub width:          u32,
+    pub height:         u32,
+    pub format:         PixelFormat,
+    pub framebuffer:    usize,
+    pub pitch:          usize
 }
 
 #[repr(C)]
@@ -71,5 +87,22 @@ impl LoadProtocol for V1 {
 
     fn set_acpi_rsdp(&mut self, rsdp: usize) {
         self.rsdp = rsdp.try_into().unwrap();
+    }
+
+    fn get_video_request(&self) -> VideoRequest {
+        use core::convert::TryFrom;
+        VideoRequest {
+            width: self.video_width,
+            height: self.video_height,
+            format: PixelFormat::try_from(self.video_format).unwrap()
+        }
+    }
+
+    fn set_video_info(&mut self, info: &VideoInfo) {
+        self.video_width = info.width;
+        self.video_height = info.height;
+        self.video_format = info.format as u32;
+        self.video_framebuffer = info.framebuffer as u64;
+        self.video_pitch = info.pitch as u64;
     }
 }

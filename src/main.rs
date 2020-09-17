@@ -21,6 +21,7 @@ use efi::{
 mod println;
 mod initrd;
 mod proto;
+mod video;
 mod elf;
 
 fn main() -> efi::Result<()> {
@@ -51,6 +52,9 @@ fn main() -> efi::Result<()> {
         CStr16::from_literal(cstr16!(r"\initrd.img")),
         &mmap,
         &obj)?;
+
+    // Set video mode
+    video::set_mode(bs, data)?;
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap)?;

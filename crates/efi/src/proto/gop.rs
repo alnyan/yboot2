@@ -1,5 +1,6 @@
 use crate::{Status, Guid};
 use crate::proto::Protocol;
+use core::convert::TryFrom;
 use core::ffi::c_void;
 
 #[repr(C)]
@@ -12,7 +13,7 @@ pub struct Mode {
     pub framebuffer_size:   usize
 }
 
-#[repr(C)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum PixelFormat {
     PixelRedGreenBlueReserved8BitPerColor,
     PixelBlueGreenRedReserved8BitPerColor
@@ -124,6 +125,22 @@ impl Mode {
     pub fn framebuffer(&self) -> &mut [u32] {
         return unsafe {
             core::slice::from_raw_parts_mut(self.framebuffer_base as *mut u32, self.framebuffer_size)
+        }
+    }
+
+    pub fn framebuffer_addr(&self) -> usize {
+        self.framebuffer_base
+    }
+}
+
+impl TryFrom<u32> for PixelFormat {
+    type Error = ();
+
+    fn try_from(f: u32) -> Result<Self, Self::Error> {
+        match f {
+            0   => Ok(PixelFormat::PixelRedGreenBlueReserved8BitPerColor),
+            1   => Ok(PixelFormat::PixelBlueGreenRedReserved8BitPerColor),
+            _   => Err(())
         }
     }
 }
