@@ -75,12 +75,30 @@ impl LoadProtocol for V1 {
     }
 
     fn set_mmap(&mut self, map: &MemoryMap) {
-        self.memory_map_data = (map.storage_ref.as_ptr() as usize).try_into().unwrap();
+        let ptr = map.storage_ref.as_ptr();
+        if ptr >= 0x100000000 as *const _ {
+            panic!("Memory map pointer crosses 4GiB");
+        }
+        if map.size > self.memory_map_size as usize {
+            panic!("Can't fit memory map");
+        }
+
+        unsafe {
+            extern "C" {
+                fn memcpy(dst: *mut u8, src: *const u8, count: usize) -> *mut u8;
+            }
+            memcpy(self.memory_map_data as *mut _, ptr, map.size);
+        }
+
+        //self.memory_map_data = (map.storage_ref.as_ptr() as usize).try_into().unwrap();
         self.memory_map_size = map.size.try_into().unwrap();
         self.memory_map_entsize = map.descriptor_size.try_into().unwrap();
     }
 
     fn set_initrd(&mut self, base: usize, size: usize) {
+        if self.initrd_base + self.initrd_size >= 0x100000000 {
+            panic!("Initrd crosses 4GiB");
+        }
         self.initrd_base = base.try_into().unwrap();
         self.initrd_size = size.try_into().unwrap();
     }
@@ -99,6 +117,10 @@ impl LoadProtocol for V1 {
     }
 
     fn set_video_info(&mut self, info: &VideoInfo) {
+        if self.video_framebuffer >= 0x100000000 {
+            panic!("Video framebuffer address is above 4GiB");
+        }
+
         self.video_width = info.width;
         self.video_height = info.height;
         self.video_format = info.format as u32;

@@ -25,20 +25,21 @@ mod video;
 mod elf;
 
 fn main() -> efi::Result<()> {
-    let mut desc_array = [0u8; 4096];
+    let mut desc_array = [0u8; 16384];
     let mut mmap = efi::MemoryMap::new(&mut desc_array);
     let bs = &system_table().boot_services;
 
+    println!("Getting memory map");
     bs.get_memory_map(&mut mmap)?;
 
+    println!("Getting RSDP");
     let rsdp = system_table()
         .config_iter()
         .find(|x| matches!(x, ConfigurationTableEntry::Acpi10Table(_)))
         .map(|x| match x {
             ConfigurationTableEntry::Acpi10Table(ptr)   => ptr,
             _                                           => panic!()
-        })
-        .unwrap();
+        });
 
     let mut root = image_handle().get_boot_path()?.open_partition()?;
 
@@ -54,17 +55,17 @@ fn main() -> efi::Result<()> {
         &obj)?;
 
     // Set video mode
-    video::set_mode(bs, data)?;
+    use proto::LoadProtocol;
+    data.set_initrd(initrd_base, initrd_size);
+    data.set_acpi_rsdp(rsdp.unwrap_or(core::ptr::null_mut()) as usize);
+    data.set_loader_magic();
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap)?;
-    bs.exit_boot_services(mmap.key)?;
-
-    use proto::LoadProtocol;
     data.set_mmap(&mmap);
-    data.set_initrd(initrd_base, initrd_size);
-    data.set_acpi_rsdp(rsdp as usize);
-    data.set_loader_magic();
+    video::set_mode(bs, data)?;
+
+    bs.exit_boot_services(mmap.key)?;
 
     unsafe {
         let entry_fn: unsafe fn () -> ! = core::mem::transmute(entry);
@@ -75,9 +76,10 @@ fn main() -> efi::Result<()> {
 #[no_mangle]
 extern "C" fn efi_main(ih: *mut ImageHandle, st: *mut SystemTable) -> u64 {
     efi::init(ih, st);
-    let ret = efi::Termination::to_efi(&main());
-    println!("result -> {}", ret);
-    return ret;
+    let res = &main();
+    println!("result -> {:?}", res);
+
+    efi::Termination::to_efi(res)
 }
 
 use core::panic::PanicInfo;
