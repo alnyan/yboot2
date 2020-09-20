@@ -1,65 +1,15 @@
 use core::convert::TryInto;
-use efi::{MemoryMap, gop::PixelFormat};
+use yboot2_proto::{
+    ProtoV1,
+    LoadProtocol,
+    PixelFormat,
+    MemoryMapInfo,
+    VideoInfo,
+    VideoRequest
+};
 
-const CMDLINE_SIZE: usize = 256;
-
-pub trait LoadProtocol: Sized {
-    const KERNEL_MAGIC: [u8; 8];
-
-    fn set_loader_magic(&mut self);
-    fn set_mmap(&mut self, map: &MemoryMap);
-    fn set_initrd(&mut self, base: usize, size: usize);
-    fn set_acpi_rsdp(&mut self, rsdp: usize);
-    fn set_video_info(&mut self, info: &VideoInfo);
-    fn get_video_request(&self) -> VideoRequest;
-}
-
-pub struct VideoRequest {
-    pub width:      u32,
-    pub height:     u32,
-    pub format:     PixelFormat
-}
-
-pub struct VideoInfo {
-    pub width:          u32,
-    pub height:         u32,
-    pub format:         PixelFormat,
-    pub framebuffer:    usize,
-    pub pitch:          usize
-}
-
-#[repr(C)]
-pub struct Header {
-    kernel_magic: [u8; 8],
-    loader_magic: [u8; 8]
-}
-
-#[repr(C)]
 pub struct V1 {
-    hdr:                Header,
-
-    memory_map_data:    u64,
-    memory_map_size:    u32,
-    memory_map_entsize: u32,
-
-    video_width:        u32,
-    video_height:       u32,
-    video_format:       u32,
-    _pad0:              u32,
-    video_framebuffer:  u64,
-    video_pitch:        u64,
-
-    elf_symtab_hdr:     u64,
-    elf_symtab_data:    u64,
-    elf_strtab_hdr:     u64,
-    elf_strtab_data:    u64,
-
-    initrd_base:        u64,
-    initrd_size:        u64,
-
-    rsdp:               u64,
-
-    cmdline:            [u8; CMDLINE_SIZE]
+    proto: ProtoV1
 }
 
 impl LoadProtocol for V1 {
@@ -71,15 +21,15 @@ impl LoadProtocol for V1 {
         const LOADER_MAGIC: [u8; 8] = [
             0x1A, 0x79, 0x9A, 0x0B, 0x70, 0x0B, 0x70, 0x00
         ];
-        self.hdr.loader_magic = LOADER_MAGIC;
+        self.proto.hdr.loader_magic = LOADER_MAGIC;
     }
 
-    fn set_mmap(&mut self, map: &MemoryMap) {
-        let ptr = map.storage_ref.as_ptr();
+    fn set_mmap(&mut self, map: &MemoryMapInfo) {
+        let ptr = map.address as *const u8;
         if ptr >= 0x100000000 as *const _ {
             panic!("Memory map pointer crosses 4GiB");
         }
-        if map.size > self.memory_map_size as usize {
+        if map.size > self.proto.memory_map_size {
             panic!("Can't fit memory map");
         }
 
@@ -87,44 +37,53 @@ impl LoadProtocol for V1 {
             extern "C" {
                 fn memcpy(dst: *mut u8, src: *const u8, count: usize) -> *mut u8;
             }
-            memcpy(self.memory_map_data as *mut _, ptr, map.size);
+            memcpy(self.proto.memory_map_data as *mut _, ptr, map.size as usize);
         }
 
-        //self.memory_map_data = (map.storage_ref.as_ptr() as usize).try_into().unwrap();
-        self.memory_map_size = map.size.try_into().unwrap();
-        self.memory_map_entsize = map.descriptor_size.try_into().unwrap();
+        self.proto.memory_map_size = map.size;
+        self.proto.memory_map_entsize = map.entsize;
     }
 
     fn set_initrd(&mut self, base: usize, size: usize) {
-        if self.initrd_base + self.initrd_size >= 0x100000000 {
+        if self.proto.initrd_base + self.proto.initrd_size >= 0x100000000 {
             panic!("Initrd crosses 4GiB");
         }
-        self.initrd_base = base.try_into().unwrap();
-        self.initrd_size = size.try_into().unwrap();
+        self.proto.initrd_base = base.try_into().unwrap();
+        self.proto.initrd_size = size.try_into().unwrap();
     }
 
     fn set_acpi_rsdp(&mut self, rsdp: usize) {
-        self.rsdp = rsdp.try_into().unwrap();
+        self.proto.rsdp = rsdp.try_into().unwrap();
     }
 
     fn get_video_request(&self) -> VideoRequest {
         use core::convert::TryFrom;
         VideoRequest {
-            width: self.video_width,
-            height: self.video_height,
-            format: PixelFormat::try_from(self.video_format).unwrap()
+            width: self.proto.video_width,
+            height: self.proto.video_height,
+            format: PixelFormat::try_from(self.proto.video_format).unwrap()
         }
     }
 
     fn set_video_info(&mut self, info: &VideoInfo) {
-        if self.video_framebuffer >= 0x100000000 {
+        if info.framebuffer >= 0x100000000 {
             panic!("Video framebuffer address is above 4GiB");
         }
 
-        self.video_width = info.width;
-        self.video_height = info.height;
-        self.video_format = info.format as u32;
-        self.video_framebuffer = info.framebuffer as u64;
-        self.video_pitch = info.pitch as u64;
+        self.proto.video_width = info.width;
+        self.proto.video_height = info.height;
+        self.proto.video_format = info.format as u32;
+        self.proto.video_framebuffer = info.framebuffer as u64;
+        self.proto.video_pitch = info.pitch as u64;
+    }
+}
+
+impl V1 {
+    pub fn set_efi_mmap(&mut self, mmap: &efi::MemoryMap) {
+        self.set_mmap(&MemoryMapInfo {
+            address:    mmap.storage_ref.as_ptr() as u64,
+            entsize:    mmap.descriptor_size.try_into().unwrap(),
+            size:       mmap.size.try_into().unwrap()
+        });
     }
 }

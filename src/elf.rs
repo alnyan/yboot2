@@ -1,6 +1,6 @@
 use efi::{File, Status, CStr16, MemoryMap};
 use core::mem::{MaybeUninit, size_of};
-use crate::proto::LoadProtocol;
+use yboot2_proto::LoadProtocol;
 
 type Off = u64;
 type Addr = u64;

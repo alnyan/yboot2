@@ -5,6 +5,7 @@
 extern crate efi;
 extern crate core_rt;
 extern crate char16_literal;
+extern crate yboot2_proto;
 pub (crate) use char16_literal::cstr16;
 
 use efi::{
@@ -16,6 +17,7 @@ use efi::{
     system_table,
     image_handle,
 };
+use yboot2_proto::LoadProtocol;
 
 #[macro_use]
 mod println;
@@ -55,14 +57,13 @@ fn main() -> efi::Result<()> {
         &obj)?;
 
     // Set video mode
-    use proto::LoadProtocol;
     data.set_initrd(initrd_base, initrd_size);
     data.set_acpi_rsdp(rsdp.unwrap_or(core::ptr::null_mut()) as usize);
     data.set_loader_magic();
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap)?;
-    data.set_mmap(&mmap);
+    data.set_efi_mmap(&mmap);
     video::set_mode(bs, data)?;
 
     bs.exit_boot_services(mmap.key)?;

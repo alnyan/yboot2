@@ -19,4 +19,10 @@ dependencies = [
  "char16-literal",
  "core-rt",
  "efi",
+ "yboot2-proto",
 ]
+
+[[package]]
+name = "yboot2-proto"
+version = "0.1.0"
+source = "git+https://git.alnyan.me/yggdrasil/yboot2-proto.git#fa586d7d0d7664826e344e830554486ba9cec933"
