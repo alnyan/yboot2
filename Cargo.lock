@@ -25,4 +25,4 @@ dependencies = [
 [[package]]
 name = "yboot2-proto"
 version = "0.1.0"
-source = "git+https://git.alnyan.me/yggdrasil/yboot2-proto.git#7be4052928abc4258cb56aee9666c4b88f0ed39b"
+source = "git+https://git.alnyan.me/yggdrasil/yboot2-proto.git#1591988e76a380b7b8fea261aaf2e04760790d5e"
