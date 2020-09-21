@@ -1,6 +1,6 @@
 use efi::{File, Status, CStr16, MemoryMap};
 use core::mem::{MaybeUninit, size_of};
-use yboot2_proto::LoadProtocol;
+use yboot2_proto::{LoadProtocol, KernelProtocol};
 
 type Off = u64;
 type Addr = u64;
@@ -121,7 +121,7 @@ impl Object {
     }
 
     // Called after load()
-    pub fn locate_protocol_data<T: LoadProtocol>(&mut self)
+    pub fn locate_protocol_data<T: KernelProtocol + LoadProtocol>(&mut self)
         -> Result<&'static mut T, Status>
     {
         let mut shdr = unsafe { MaybeUninit::<Shdr>::uninit().assume_init() };

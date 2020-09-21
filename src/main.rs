@@ -17,14 +17,25 @@ use efi::{
     system_table,
     image_handle,
 };
-use yboot2_proto::LoadProtocol;
+use yboot2_proto::{LoadProtocol, ProtoV1, MemoryMapInfo};
+use core::convert::TryInto;
 
 #[macro_use]
 mod println;
 mod initrd;
-mod proto;
 mod video;
 mod elf;
+
+fn set_efi_mmap<T: LoadProtocol>(data: &mut T, mmap: &efi::MemoryMap) -> efi::Result<()> {
+    match data.set_mmap(&MemoryMapInfo {
+        address:    mmap.storage_ref.as_ptr() as u64,
+        entsize:    mmap.descriptor_size.try_into().unwrap(),
+        size:       mmap.size.try_into().unwrap()
+    }) {
+        Err(_)      => Err(Status::Err),
+        Ok(())      => Ok(())
+    }
+}
 
 fn main() -> efi::Result<()> {
     let mut desc_array = [0u8; 16384];
@@ -48,22 +59,27 @@ fn main() -> efi::Result<()> {
     // Load kernel
     let mut obj = elf::Object::open(&mut root, CStr16::from_literal(cstr16!(r"\kernel.elf")))?;
     let entry = obj.load(&mmap)?;
-    let data = obj.locate_protocol_data::<proto::V1>()?;
+    let data = obj.locate_protocol_data::<ProtoV1>()?;
 
-    // Load initrd
-    let (initrd_base, initrd_size) = initrd::load_somewhere(&mut root,
-        CStr16::from_literal(cstr16!(r"\initrd.img")),
-        &mmap,
-        &obj)?;
+    if (data.get_flags() & yboot2_proto::FLAG_INITRD) != 0 {
+        // Load initrd
+        let (initrd_base, initrd_size) = initrd::load_somewhere(&mut root,
+            CStr16::from_literal(cstr16!(r"\initrd.img")),
+            &mmap,
+            &obj)?;
 
-    // Set video mode
-    data.set_initrd(initrd_base, initrd_size);
+        // Set video mode
+        data.set_initrd(initrd_base, initrd_size);
+    } else {
+        data.set_initrd(0, 0);
+    }
+
     data.set_acpi_rsdp(rsdp.unwrap_or(core::ptr::null_mut()) as usize);
     data.set_loader_magic();
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap)?;
-    data.set_efi_mmap(&mmap);
+    set_efi_mmap(data, &mmap)?;
     video::set_mode(bs, data)?;
 
     bs.exit_boot_services(mmap.key)?;

@@ -10,4 +10,7 @@ edition = "2018"
 efi             = { path = "crates/efi" }
 char16-literal  = { path = "crates/char16-literal" }
 core-rt         = { path = "crates/core-rt" }
-yboot2-proto    = { git = "https://git.alnyan.me/yggdrasil/yboot2-proto.git" }
+
+[dependencies.yboot2-proto]
+git = "https://git.alnyan.me/yggdrasil/yboot2-proto.git"
+features = ["kernel-protocol", "load-protocol"]

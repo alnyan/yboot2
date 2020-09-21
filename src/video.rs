@@ -1,4 +1,4 @@
-use yboot2_proto::{LoadProtocol, VideoRequest, VideoInfo, PixelFormat};
+use yboot2_proto::{LoadProtocol, VideoInfo, video::PixelFormat};
 use efi::{BootServices, Status, GraphicsOutputProtocol, gop::ModeInformation};
 
 // TODO: "Any" format
@@ -18,12 +18,11 @@ fn pixel_from_efi(from: efi::gop::PixelFormat) -> Option<PixelFormat> {
     match from {
         PixelRedGreenBlueReserved8BitPerColor   => Some(PixelFormat::LfbRgb32),
         PixelBlueGreenRedReserved8BitPerColor   => Some(PixelFormat::LfbBgr32),
-        _                                       => None
     }
 }
 
 fn find_mode(proto: &GraphicsOutputProtocol,
-             req: &VideoRequest) -> Result<(u32, &'static ModeInformation), Status> {
+             req: &VideoInfo) -> Result<(u32, &'static ModeInformation), Status> {
     let req_format = pixel_to_efi(req.format).unwrap();
     for (num, info) in proto.mode_iter() {
         if info.horizontal_resolution == req.width &&
@@ -36,10 +35,9 @@ fn find_mode(proto: &GraphicsOutputProtocol,
 }
 
 pub fn set_mode<T: LoadProtocol>(bs: &BootServices, data: &mut T) -> Result<(), Status> {
-    let req = data.get_video_request();
     let gop = bs.locate_protocol::<GraphicsOutputProtocol>()?;
 
-    match find_mode(gop, &req) {
+    match find_mode(gop, data.get_video_info()) {
         Ok((num, info))     => {
             let mode = gop.set_mode(num)?;
 
@@ -47,8 +45,8 @@ pub fn set_mode<T: LoadProtocol>(bs: &BootServices, data: &mut T) -> Result<(), 
                 width:          info.horizontal_resolution,
                 height:         info.vertical_resolution,
                 format:         pixel_from_efi(info.pixel_format).unwrap(),
-                framebuffer:    mode.framebuffer_addr(),
-                pitch:          4 * info.horizontal_resolution as usize
+                framebuffer:    mode.framebuffer_addr() as u64,
+                pitch:          4 * info.horizontal_resolution as u64
             };
 
             data.set_video_info(&info);
