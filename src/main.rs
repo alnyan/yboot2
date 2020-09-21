@@ -1,4 +1,4 @@
-#![feature(asm,const_fn)]
+#![feature(asm,const_fn,llvm_asm)]
 #![no_main]
 #![no_std]
 
@@ -24,6 +24,7 @@ use core::convert::TryInto;
 mod println;
 mod initrd;
 mod video;
+mod mem;
 mod elf;
 
 fn set_efi_mmap<T: LoadProtocol>(data: &mut T, mmap: &efi::MemoryMap) -> efi::Result<()> {
@@ -77,17 +78,27 @@ fn main() -> efi::Result<()> {
     data.set_acpi_rsdp(rsdp.unwrap_or(core::ptr::null_mut()) as usize);
     data.set_loader_magic();
 
-    // Get the new memory map and terminate boot services
-    bs.get_memory_map(&mut mmap)?;
-    set_efi_mmap(data, &mmap)?;
     video::set_mode(bs, data)?;
 
+    // Get the new memory map and terminate boot services
+    bs.get_memory_map(&mut mmap)?;
     bs.exit_boot_services(mmap.key)?;
+    set_efi_mmap(data, &mmap)?;
 
-    unsafe {
-        let entry_fn: unsafe fn () -> ! = core::mem::transmute(entry);
-        entry_fn();
+    // Setup upper virtual mapping if requested
+    if (data.get_flags() & yboot2_proto::FLAG_UPPER) != 0 {
+        mem::setup_upper();
+        unsafe {
+            llvm_asm!("xor %rbp, %rbp; jmp *$0"::"{di}"(entry));
+        }
+    } else {
+        unsafe {
+            let entry_fn: unsafe fn () -> ! = core::mem::transmute(entry);
+            entry_fn();
+        }
     }
+
+    loop {}
 }
 
 #[no_mangle]

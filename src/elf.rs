@@ -203,6 +203,6 @@ impl Object {
             }
         }
 
-        Ok(self.ehdr.entry as usize - 0xFFFFFF0000000000)
+        Ok(self.ehdr.entry as usize)
     }
 }
