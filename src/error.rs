@@ -6,7 +6,6 @@ use efi;
 pub enum BootError {
     ImageLoadError(ImageLoadError),
     InitrdLoadError(InitrdLoadError),
-    ProtocolError(ProtocolError),
     MemoryMapError(efi::Status),
     FileError(efi::Status),
     TerminateServicesError(efi::Status),
@@ -30,15 +29,6 @@ pub enum InitrdLoadError {
     NoSpace,
 }
 
-#[derive(Debug)]
-pub enum ProtocolError {}
-
-impl From<ProtocolError> for BootError {
-    fn from(p: ProtocolError) -> Self {
-        BootError::ProtocolError(p)
-    }
-}
-
 impl From<InitrdLoadError> for BootError {
     fn from(p: InitrdLoadError) -> Self {
         BootError::InitrdLoadError(p)
@@ -52,8 +42,8 @@ impl From<ImageLoadError> for BootError {
 }
 
 impl From<&BootError> for efi::Status {
-    fn from(f: &BootError) -> Self {
-        todo!()
+    fn from(_: &BootError) -> Self {
+        efi::Status::Err
     }
 }
 

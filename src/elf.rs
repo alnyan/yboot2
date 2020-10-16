@@ -1,6 +1,6 @@
-use crate::error::{ImageLoadError, ProtocolError};
+use crate::error::ImageLoadError;
 use core::mem::{size_of, MaybeUninit};
-use efi::{CStr16, File, MemoryMap, Status};
+use efi::{CStr16, File, MemoryMap};
 use yboot2_proto::{LoadProtocol, Magic};
 
 type Off = u64;

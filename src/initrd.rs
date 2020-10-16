@@ -1,7 +1,7 @@
 use crate::elf;
 use crate::error::InitrdLoadError;
 use core::mem::MaybeUninit;
-use efi::{CStr16, File, Status};
+use efi::{CStr16, File};
 
 fn check_placement(mmap: &efi::MemoryMap, base: usize, size: usize) -> bool {
     for page in (base & !0xFFF..(base + size + 0xFFF) & !0xFFF).step_by(0x1000) {

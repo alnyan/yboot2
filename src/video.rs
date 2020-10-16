@@ -1,5 +1,5 @@
 use crate::error::BootError;
-use efi::{gop::ModeInformation, BootServices, GraphicsOutputProtocol, Status};
+use efi::{gop::ModeInformation, BootServices, GraphicsOutputProtocol};
 use yboot2_proto::{video::PixelFormat, LoadProtocol, VideoInfo};
 
 // TODO: "Any" format
