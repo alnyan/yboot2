@@ -88,11 +88,20 @@ fn main() -> Result<(), BootError> {
     set_efi_mmap(data, &mmap)?;
 
     // Setup upper virtual mapping if requested
+    let real_entry: usize;
     if (data.get_flags() & yboot2_proto::FLAG_UPPER) != 0 {
         mem::setup_upper();
+
+        real_entry = entry;
+    } else {
+        real_entry = if entry >= 0xFFFFFF0000000000 {
+            entry - 0xFFFFFF0000000000
+        } else {
+            entry
+        };
     }
     unsafe {
-        llvm_asm!("xor %rbp, %rbp; jmp *$0"::"{di}"(entry));
+        llvm_asm!("xor %rbp, %rbp; jmp *$0"::"{di}"(real_entry));
     }
     loop {}
 }
