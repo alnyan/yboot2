@@ -80,7 +80,9 @@ fn main() -> Result<(), BootError> {
     data.set_acpi_rsdp(rsdp.unwrap_or(core::ptr::null_mut()) as usize);
     data.set_loader_magic();
 
-    video::set_mode(bs, data)?;
+    if (data.get_flags() & yboot2_proto::FLAG_VIDEO) != 0 {
+        video::set_mode(bs, data)?;
+    }
 
     // Get the new memory map and terminate boot services
     bs.get_memory_map(&mut mmap).map_err(BootError::MemoryMapError)?;
